@@ -1,6 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword, getAuth, sendPasswordResetEmail, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, getDoc, getFirestore, serverTimestamp, setDoc } from "firebase/firestore";
 
 // Your web app's Firebase configuration
@@ -59,6 +59,25 @@ export const updateUser = (user: {
 }) =>{
   if(auth.currentUser) return updateProfile(auth.currentUser,user)
 }
+
+
+//ENVIAR CORREO PARA RESETEAR CONTRASEÑA 
+
+export const sendResetEmail = (email:string) =>{
+  return sendPasswordResetEmail(auth,email)
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 // ===== DATABASE FUNCTIONS =====
 
