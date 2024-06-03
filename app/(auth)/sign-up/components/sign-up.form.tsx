@@ -12,21 +12,31 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 //para el registro de usuario
-import { signIn } from "@/lib/firebase";
+import { createUser, setDocument, updateUser } from "@/lib/firebase";
 import { useState } from "react";
 import { LoaderCircle } from "lucide-react";
 import toast from "react-hot-toast";
 
 
 
-const SignInForm = () => {
+import { User } from "@/interfaces/user.interface";
+
+
+
+
+
+
+
+const SignUpForm = () => {
 
     const [isLoading, setisLoading] = useState<boolean>(false  )
-
+    
 
 
     // ==== FORM VALIDATION ===
     const formSchema = z.object({
+        uid:z.string(),
+        name:z.string().min(4,{message:"This field must contain at less 4 characters "}),
         email:z.string().email("Email format is not valid. Example: user@mail.com").min(1,{message:"This field is required"}),
         password:z.string().min(8,{message:"This field must contain at less 8 characters "}),
     })
@@ -34,6 +44,8 @@ const SignInForm = () => {
     const form = useForm<z.infer<typeof formSchema>>({
         resolver:zodResolver(formSchema),
         defaultValues:{
+            uid:"",
+            name:"",
             email:"",
             password:""
         }
@@ -48,8 +60,14 @@ const SignInForm = () => {
 
         setisLoading(true)
         try {
-            const res = await signIn(user)
-            console.log(res)
+            const res = await createUser(user) 
+            await updateUser({displayName: user.name })
+            user.uid = res.user.uid
+
+            await createUserInDb(user as User);
+
+
+
         } catch (error:any) {
             toast.error(error.message,{duration:2500})
         }finally{
@@ -57,16 +75,46 @@ const SignInForm = () => {
         }
     }
 
+
+//GUARDA EL USUARIO EN LA BASE DE DATOS
+    const createUserInDb = async (user:User)=>{
+        const path = `users/${user.uid}`
+        
+        setisLoading(true);
+        try {
+            delete user.password; 
+            await setDocument(path,user);
+
+            toast(`Bienvenido ${user.name}`)
+
+        } catch (error:any) {
+            toast.error(error.message,{duration:2500})
+        }finally{
+            setisLoading(false)
+        }
+    } 
+
     return (
         <>
             <div className="text-center">
-                <h1 className="text-2xl font-semibold">Sign In</h1>
+                <h1 className="text-2xl font-semibold">Create Account</h1>
                 <p className="text-sm text-mute-foreground ">Enter your email and password to sign in</p>
 
 
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} >
+
+
+                {/*NAME*/}
+                <div className="grid gap-2 ">
+                    <div className="mb-3">
+                        <Label htmlFor="name" >Name</Label>
+                        <Input id="name" placeholder="Jhon Doe" type="text" {...register("name")} />
+                        <p className="form-errors" >{errors.name?.message}</p>
+                    </div>
+                </div>
+
 
                 {/*EMAIL*/}
                 <div className="grid gap-2 ">
@@ -85,15 +133,13 @@ const SignInForm = () => {
                         <Input id="password" placeholder="********" type="password" {...register("password")} />
                         <p className="form-errors" >{errors.password?.message}</p>
                     </div>
-                <Link href="/forgot-password" className="underline text-muted-foreground underline-offset-4 hover:text-primary mb-6 text-sm text-end">Forgot passoword?</Link> 
-
                 {/* === Submit === */}
 
                 <Button type="submit" disabled={isLoading} >
                     {isLoading && (
                         <LoaderCircle className="mr-2 h-4 w-4 animate-spin " />
                     )}
-                    Sign In
+                    Create
                     </Button>
                 </div>
 
@@ -102,11 +148,11 @@ const SignInForm = () => {
             </form>
             {/*Sign up */}
             <p className="text-center text-sm text-muted-foreground">
-                You dont have an account?{" "}
-                <Link href="/sign-up" className="underline underline-offset-4 hover:text-primary ">Sign up</Link> 
+                Do you already have an account?{" "}
+                <Link href="/" className="underline underline-offset-4 hover:text-primary ">Sign in</Link> 
             </p>
         </>
     );
 }
 
-export default SignInForm;
+export default SignUpForm;
